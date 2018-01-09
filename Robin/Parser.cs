@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Robin
 {
-    public delegate Expression PrefixFn();
-    public delegate Expression InfixFn(Expression e);
+    public delegate IExpression PrefixFn();
+    public delegate IExpression InfixFn(IExpression e);
 
     enum Precedence { Lowest, Equal, LessGreater, Sum, Product, Prefix, Call }
 
@@ -86,7 +86,7 @@ namespace Robin
             RegisterInfix(TokenType.NotEq, ParseInfixExpression);
         }
 
-        private Expression ParseGroupedExpression()
+        private IExpression ParseGroupedExpression()
         {
             // move past '('
             NextToken();
@@ -102,12 +102,12 @@ namespace Robin
             return expr;
         }
 
-        private Expression ParseBoolean()
+        private IExpression ParseBoolean()
         {
             return new Boolean { Token = currentToken, Value = CurrentTokenIs(TokenType.True) };
         }
 
-        private Expression ParseInfixExpression(Expression left)
+        private IExpression ParseInfixExpression(IExpression left)
         {
             var expr = new InfixExpression
             {
@@ -123,7 +123,7 @@ namespace Robin
             return expr;
         }
 
-        private Expression ParsePrefixExpression()
+        private IExpression ParsePrefixExpression()
         {
             var expr = new PrefixExpression { Token = currentToken, Operator = currentToken.Literal };
             
@@ -137,15 +137,15 @@ namespace Robin
 
         private void NoPrefixParseFunctionFound(TokenType tokenType)
         {
-            Errors.Add(string.Format("No prefix parse function for %s found.", tokenType.ToString()));
+            Errors.Add($"No prefix parse function for {tokenType} found.");
         }
 
-        private Expression ParseInt()
+        private IExpression ParseInt()
         {
             var integer = new IntegerLiteral { Token = currentToken };
             if (!Int64.TryParse(currentToken.Literal, out long result))
             {
-                Errors.Add(String.Format("Cannot parse %s as an integer", currentToken.Literal));
+                Errors.Add($"Cannot parse {currentToken.Literal} as an integer");
             }
             else
             {
@@ -155,7 +155,7 @@ namespace Robin
             return integer;
         }
 
-        private Expression ParseIdentifier() => new Identifier { Token = currentToken, Value = currentToken.Literal };
+        private IExpression ParseIdentifier() => new Identifier { Token = currentToken, Value = currentToken.Literal };
 
         public void NextToken()
         {
@@ -165,12 +165,12 @@ namespace Robin
 
         public void PeekError(TokenType tokenType)
         {
-            Errors.Add(String.Format("Expected %s, found %s.", tokenType.ToString(), peekToken.ToString()));
+            Errors.Add($"Expected {tokenType}, found {peekToken}.");
         }
 
         public MonkeyProgram ParseProgram()
         {
-            var statements = new List<Statement>();
+            var statements = new List<IStatement>();
             while (currentToken.Type != TokenType.Eof)
             {
                 var statement = ParseStatement();
@@ -184,7 +184,7 @@ namespace Robin
             return new MonkeyProgram { Statements = statements.ToArray() };
         }
 
-        private Statement ParseStatement()
+        private IStatement ParseStatement()
         {
             switch (currentToken.Type)
             {
@@ -211,7 +211,7 @@ namespace Robin
             return expressionStatement;
         }
 
-        private Expression ParseExpression(Precedence p)
+        private IExpression ParseExpression(Precedence p)
         {
             var prefix = prefixParseFns[currentToken.Type];
             if (prefix == null)

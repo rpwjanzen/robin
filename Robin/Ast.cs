@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 
 namespace Robin
 {
-    public interface Node { }
-    public interface Statement : Node { }
-    public interface Expression : Node { }
+    public interface INode { }
+    public interface IStatement : INode { }
+    public interface IExpression : INode { }
 
-    public sealed class IfExpression : Expression
+    public sealed class IfExpression : IExpression
     {
         public Token Token;
-        public Expression Condition;
+        public IExpression Condition;
         public BlockStatement Consequent;
         public BlockStatement Alternative;
 
@@ -21,10 +21,10 @@ namespace Robin
         {
             if (Alternative != null)
             {
-                return String.Format("if (%s) then %s else %s", Condition.ToString(), Consequent.ToString(), Alternative.ToString());
+                return $"if ({Condition}) then {Consequent} else {Alternative}";
             }
 
-            return String.Format("if (%s) then %s", Condition.ToString(), Consequent.ToString());
+            return $"if ({Condition} then {Consequent}";
         }
 
         public override bool Equals(object obj)
@@ -62,7 +62,7 @@ namespace Robin
 
     }
 
-    public sealed class Boolean : Expression
+    public sealed class Boolean : IExpression
     {
         public Token Token;
         public bool Value;
@@ -84,23 +84,23 @@ namespace Robin
         }
     }
 
-    public sealed class Identifier : Expression
+    public sealed class Identifier : IExpression
     {
         public Token Token;
         public string Value;
     }
 
-    public sealed class LetStatement : Statement
+    public sealed class LetStatement : IStatement
     {
         public Token Token;
-        public Expression Name;
+        public IExpression Name;
         public string Value;
     }
 
-    public sealed class ReturnStatement : Statement
+    public sealed class ReturnStatement : IStatement
     {
         public Token Token;
-        public Expression ReturnValue;
+        public IExpression ReturnValue;
 
         public override bool Equals(object obj)
         {
@@ -119,40 +119,40 @@ namespace Robin
         }
     }
 
-    public sealed class PrefixExpression : Expression
+    public sealed class PrefixExpression : IExpression
     {
         public Token Token;
         public string Operator;
-        public Expression Right;
+        public IExpression Right;
 
         public override string ToString()
         {
-            return string.Format("(%s%s)", Operator, Right.ToString());
+            return $"({Operator}{Right})";
         }
     }
 
-    public sealed class InfixExpression : Expression
+    public sealed class InfixExpression : IExpression
     {
         public Token Token;
-        public Expression Left;
+        public IExpression Left;
         public string Operator;
-        public Expression Right;
+        public IExpression Right;
 
         public override string ToString()
         {
-            return string.Format("(%s %s %s)", Left.ToString(), Operator, Right.ToString());
+            return $"({Left} {Operator} {Right})";
         }
     }
 
-    public sealed class ExpressionStatement : Statement
+    public sealed class ExpressionStatement : IStatement
     {
         // first token of the expression
         public Token Token;
 
-        public Expression Expression;
+        public IExpression Expression;
     }
 
-    public sealed class IntegerLiteral : Expression
+    public sealed class IntegerLiteral : IExpression
     {
         public Token Token;
         public Int64 Value;
@@ -175,7 +175,7 @@ namespace Robin
 
     public sealed class MonkeyProgram
     {
-        public Statement[] Statements;
+        public IStatement[] Statements;
 
         public override string ToString()
         {

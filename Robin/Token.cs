@@ -46,9 +46,8 @@ namespace Robin
 
         public override bool Equals(object obj)
         {
-            if (obj is Token)
+            if (obj is Token other)
             {
-                var other = (Token)obj;
                 return Type.Equals(other.Type) && Literal.Equals(other.Literal);
             }
 
@@ -58,6 +57,16 @@ namespace Robin
         public override int GetHashCode()
         {
             return Type.GetHashCode() ^ Literal.GetHashCode();
+        }
+
+        public static bool operator ==(Token a, Token b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator !=(Token a, Token b)
+        {
+            return !(a == b);
         }
 
         public static Token Create(TokenType type, char ch)
