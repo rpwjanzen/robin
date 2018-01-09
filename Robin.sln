@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.16
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Robin", "Robin\Robin.csproj", "{D2279447-02EC-4F31-85C0-A470BC0F1AED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RobinTests", "RobinTests\RobinTests.csproj", "{63034AB9-11E2-4685-A84C-52E98110A7B8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D2279447-02EC-4F31-85C0-A470BC0F1AED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2279447-02EC-4F31-85C0-A470BC0F1AED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2279447-02EC-4F31-85C0-A470BC0F1AED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2279447-02EC-4F31-85C0-A470BC0F1AED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{63034AB9-11E2-4685-A84C-52E98110A7B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63034AB9-11E2-4685-A84C-52E98110A7B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63034AB9-11E2-4685-A84C-52E98110A7B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63034AB9-11E2-4685-A84C-52E98110A7B8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1B73D9BF-C6CC-4F60-B2BE-891CE5C9AE05}
+	EndGlobalSection
+EndGlobal
