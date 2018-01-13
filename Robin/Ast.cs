@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-//using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Robin
+﻿namespace Robin.Ast
 {
+    using System;
+    using System.Collections.Generic;
+
     public interface INode { }
     public interface IStatement : INode { }
     public interface IExpression : INode { }
@@ -209,7 +206,7 @@ namespace Robin
         }
     }
 
-    public sealed class MonkeyProgram
+    public sealed class Program : INode
     {
         public IStatement[] Statements;
 

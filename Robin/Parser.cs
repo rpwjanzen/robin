@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Robin
+﻿namespace Robin.Parsing
 {
+    using Robin.Ast;
+    using Robin.Lexing;
+    using System;
+    using System.Collections.Generic;
+    using Boolean = Ast.Boolean;
+
     public delegate IExpression PrefixFn();
     public delegate IExpression InfixFn(IExpression e);
 
@@ -271,7 +271,7 @@ namespace Robin
             Errors.Add($"Expected next token to be {tokenType}, found {peekToken} instead.");
         }
 
-        public MonkeyProgram ParseProgram()
+        public Program ParseProgram()
         {
             var statements = new List<IStatement>();
             while (currentToken.Type != TokenType.Eof)
@@ -284,7 +284,7 @@ namespace Robin
                 NextToken();
             }
 
-            return new MonkeyProgram { Statements = statements.ToArray() };
+            return new Program { Statements = statements.ToArray() };
         }
 
         private IStatement ParseStatement()

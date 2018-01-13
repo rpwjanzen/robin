@@ -44,7 +44,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Ast.cs" />
+    <Compile Include="Environment.cs" />
+    <Compile Include="Evaluator.cs" />
     <Compile Include="Lexer.cs" />
+    <Compile Include="Object.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

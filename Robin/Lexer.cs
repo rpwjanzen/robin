@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Robin
+﻿namespace Robin.Lexing
 {
+    using System;
+
     public class Lexer
     {
         public readonly string Input;

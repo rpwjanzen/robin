@@ -1,6 +1,7 @@
 ﻿using System;
 using Robin;
 using NUnit.Framework;
+using Robin.Lexing;
 
 namespace RobinTests
 {

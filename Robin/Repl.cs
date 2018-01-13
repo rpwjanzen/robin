@@ -1,18 +1,18 @@
-﻿using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Robin
+﻿namespace Robin
 {
+    using System.IO;
+    using System.Collections.Generic;
+    using Robin.Lexing;
+    using Robin.Parsing;
+
     public class Repl
     {
         const string Prompt = ">> ";
 
         public static void Start(TextReader reader, TextWriter writer)
         {
+            var env = new Environment();
+
             writer.Write(Prompt);
             var line = reader.ReadLine();
             while(line != null)
@@ -23,10 +23,17 @@ namespace Robin
                 if (parser.Errors.Count != 0)
                 {
                     PrintErrors(writer, parser.Errors);
+
+                    writer.Write(Prompt);
+                    line = reader.ReadLine();
+                    continue;
                 }
-                else
+
+                var evaluator = new Eval.Evaluator();
+                var result = evaluator.Eval(program, env);
+                if (result != null)
                 {
-                    writer.WriteLine(program);
+                    writer.WriteLine(result.Inspect());
                 }
 
                 writer.Write(Prompt);

@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-
-namespace Robin
+﻿namespace Robin
 {
+    using System.Collections.Generic;
+
     public enum TokenType
     {
         Illegal,

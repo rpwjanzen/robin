@@ -1,11 +1,14 @@
-﻿using NUnit.Framework;
-using Robin;
-using System;
-using System.Diagnostics;
-using System.Linq;
-
-namespace RobinTests
+﻿namespace RobinTests
 {
+    using NUnit.Framework;
+    using Robin;
+    using Robin.Ast;
+    using Robin.Lexing;
+    using Robin.Parsing;
+    using System;
+    using System.Diagnostics;
+    using System.Linq;
+
     [TestFixture]
     public class ParserTest
     {
@@ -143,7 +146,7 @@ namespace RobinTests
             var parser = new Parser(new Lexer(text));
             var program = parser.ParseProgram();
             var expressionStatement = (ExpressionStatement)program.Statements[0];
-            var expr = (Robin.Boolean)expressionStatement.Expression;
+            var expr = (Robin.Ast.Boolean)expressionStatement.Expression;
 
             Assert.That(expr.Token.Type, Is.EqualTo(tokenType));
             Assert.That(expr.Value, Is.EqualTo(value));
