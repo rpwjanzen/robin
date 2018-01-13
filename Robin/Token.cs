@@ -97,7 +97,7 @@ namespace Robin
 
         public override string ToString()
         {
-            return "{Type: " + Type.ToString() + " , Literal: " + Literal + "}";
+            return $"{Literal}";
         }
     }
 }

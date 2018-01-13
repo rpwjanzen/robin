@@ -18,15 +18,32 @@ namespace Robin
             while(line != null)
             {
                 var lexer = new Lexer(line);
-                var token = lexer.NextToken();
-                while(token.Type != TokenType.Eof)
+                var parser = new Parser(lexer);
+                var program = parser.ParseProgram();
+                if (parser.Errors.Count != 0)
                 {
-                    writer.WriteLine(token);
-                    token = lexer.NextToken();
+                    PrintErrors(writer, parser.Errors);
+                }
+                else
+                {
+                    writer.WriteLine(program);
                 }
 
                 writer.Write(Prompt);
                 line = reader.ReadLine();
+            }
+        }
+
+        private static void PrintErrors(TextWriter writer, List<string> errors)
+        {
+            const string monkeyFace = "<<<monkey face here>>>";
+
+            writer.WriteLine(monkeyFace);
+            writer.WriteLine("Woops! We ran into some monkey buisiness here!");
+            writer.WriteLine(" parser errors:");
+            foreach (var error in errors)
+            {
+                writer.WriteLine($"\t{error}");
             }
         }
     }

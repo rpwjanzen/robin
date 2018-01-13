@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+//using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -57,9 +57,15 @@ namespace Robin
         }
     }
 
-        public sealed class BlockStatement
+    public sealed class BlockStatement : IStatement
     {
+        public Token Token;
+        public IStatement[] Statements;
 
+        public override string ToString()
+        {
+            return String.Join("", (IEnumerable<IStatement>)Statements);
+        }
     }
 
     public sealed class Boolean : IExpression
@@ -82,19 +88,34 @@ namespace Robin
         {
             return Token.GetHashCode() ^ Value.GetHashCode();
         }
+
+        public override string ToString()
+        {
+            return $"{Value}";
+        }
     }
 
     public sealed class Identifier : IExpression
     {
         public Token Token;
         public string Value;
+
+        public override string ToString()
+        {
+            return $"{Value}";
+        }
     }
 
     public sealed class LetStatement : IStatement
     {
         public Token Token;
-        public IExpression Name;
-        public string Value;
+        public Identifier Name;
+        public IExpression Value;
+
+        public override string ToString()
+        {
+            return $"let {Name} = {Value}";
+        }
     }
 
     public sealed class ReturnStatement : IStatement
@@ -116,6 +137,11 @@ namespace Robin
         public override int GetHashCode()
         {
             return Token.GetHashCode() ^ ReturnValue.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return $"return {ReturnValue}";
         }
     }
 
@@ -150,6 +176,11 @@ namespace Robin
         public Token Token;
 
         public IExpression Expression;
+
+        public override string ToString()
+        {
+            return $"{Expression}";
+        }
     }
 
     public sealed class IntegerLiteral : IExpression
@@ -171,6 +202,11 @@ namespace Robin
         {
             return Value.GetHashCode() ^ Token.GetHashCode();
         }
+
+        public override string ToString()
+        {
+            return $"{Value}";
+        }
     }
 
     public sealed class MonkeyProgram
@@ -187,6 +223,30 @@ namespace Robin
             {
                 return Statements[0].ToString();
             }
+        }
+    }
+
+    public sealed class FunctionLiteral : IExpression
+    {
+        public Token Token;
+        public Identifier[] Parameters;
+        public BlockStatement Body;
+
+        public override string ToString()
+        {
+            return $"{Token.Literal} ({String.Join(", ", (IEnumerable<Identifier>)Parameters)}) {Body}";
+        }
+    }
+
+    public sealed class CallExpression : IExpression
+    {
+        public Token Token;
+        public IExpression Function;
+        public IExpression[] Arguments;
+
+        public override string ToString()
+        {
+            return $"{Function} ({String.Join(", ", (IEnumerable<IExpression>)Arguments)})";
         }
     }
 }

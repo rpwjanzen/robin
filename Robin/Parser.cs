@@ -30,6 +30,7 @@ namespace Robin
             { TokenType.Minus, Precedence.Sum },
             { TokenType.Asterisk, Precedence.Product },
             { TokenType.Slash, Precedence.Product },
+            { TokenType.LParen, Precedence.Call }
         };
 
         private Precedence PeekPrecedence()
@@ -75,6 +76,8 @@ namespace Robin
             RegisterPrefix(TokenType.True, ParseBoolean);
             RegisterPrefix(TokenType.False, ParseBoolean);
             RegisterPrefix(TokenType.LParen, ParseGroupedExpression);
+            RegisterPrefix(TokenType.If, ParseIfExpression);
+            RegisterPrefix(TokenType.Function, ParseFunctionLiteral);
 
             RegisterInfix(TokenType.Plus, ParseInfixExpression);
             RegisterInfix(TokenType.Minus, ParseInfixExpression);
@@ -84,6 +87,106 @@ namespace Robin
             RegisterInfix(TokenType.Slash, ParseInfixExpression);
             RegisterInfix(TokenType.Eq, ParseInfixExpression);
             RegisterInfix(TokenType.NotEq, ParseInfixExpression);
+            RegisterInfix(TokenType.LParen, ParseCallExpression);
+        }
+
+        private IExpression ParseCallExpression(IExpression function)
+        {
+            var exp = new CallExpression { Token = currentToken, Function = function };
+            exp.Arguments = ParseCallArguments();
+            return exp;
+        }
+
+        private IExpression[] ParseCallArguments()
+        {
+            var args = new List<IExpression>();
+
+            if (PeekTokenIs(TokenType.RParen))
+            {
+                // ')'
+                NextToken();
+                return args.ToArray();
+            }
+            // ')'
+            NextToken();
+
+            args.Add(ParseExpression(Precedence.Lowest));
+
+            while(PeekTokenIs(TokenType.Comma))
+            {
+                // ','
+                NextToken();
+                // ???
+                NextToken();
+
+                args.Add(ParseExpression(Precedence.Lowest));
+            }
+
+            if (!ExpectPeek(TokenType.RParen))
+            {
+                return null;
+            }
+
+            return args.ToArray();
+        }
+
+        private IExpression ParseFunctionLiteral()
+        {
+            var lit = new FunctionLiteral() { Token = currentToken };
+            if (!ExpectPeek(TokenType.LParen))
+            {
+                return null;
+            }
+
+            lit.Parameters = ParseFunctionParameters();
+
+            if (!ExpectPeek(TokenType.LBrace))
+            {
+                return null;
+            }
+
+            lit.Body = ParseBlockStatement();
+
+            return lit;
+        }
+
+        private Identifier[] ParseFunctionParameters()
+        {
+            // ')'
+            if (PeekTokenIs(TokenType.RParen))
+            {
+                // ')'
+                NextToken();
+
+                return new Identifier[0]; 
+            }
+
+            // ')'
+            NextToken();
+
+            var identifiers = new List<Identifier>();
+            var ident = new Identifier { Token = currentToken, Value = currentToken.Literal };
+            identifiers.Add(ident);
+
+            while(PeekTokenIs(TokenType.Comma))
+            {
+                // ','
+                NextToken();
+
+                // ???
+                NextToken();
+
+                ident = new Identifier { Token = currentToken, Value = currentToken.Literal };
+                identifiers.Add(ident);
+            }
+
+            // ')'
+            if (!ExpectPeek(TokenType.RParen))
+            {
+                return null;
+            }
+
+            return identifiers.ToArray();
         }
 
         private IExpression ParseGroupedExpression()
@@ -165,7 +268,7 @@ namespace Robin
 
         public void PeekError(TokenType tokenType)
         {
-            Errors.Add($"Expected {tokenType}, found {peekToken}.");
+            Errors.Add($"Expected next token to be {tokenType}, found {peekToken} instead.");
         }
 
         public MonkeyProgram ParseProgram()
@@ -213,8 +316,7 @@ namespace Robin
 
         private IExpression ParseExpression(Precedence p)
         {
-            var prefix = prefixParseFns[currentToken.Type];
-            if (prefix == null)
+            if (!prefixParseFns.TryGetValue(currentToken.Type, out PrefixFn prefix)) 
             {
                 NoPrefixParseFunctionFound(currentToken.Type);
                 return null;
@@ -255,10 +357,15 @@ namespace Robin
                 return null;
             }
 
-            // TODO: We're skipping the expressions until we
-            // encounter a semicolon
-            while (!CurrentTokenIs(TokenType.Semicolon))
+            // ???
+            NextToken();
+
+            letStatement.Value = ParseExpression(Precedence.Lowest);
+
+            // optional semicolon
+            if (PeekTokenIs(TokenType.Semicolon))
             {
+                // ';'
                 NextToken();
             }
 
@@ -284,16 +391,89 @@ namespace Robin
         private ReturnStatement ParseReturnStatement()
         {
             var returnStatement = new ReturnStatement { Token = currentToken };
+            // 'return'
             NextToken();
 
-            // TODO: We're skipping the expressions until we
-            // encounter a semicolon
-            while (!CurrentTokenIs(TokenType.Semicolon))
+            returnStatement.ReturnValue = ParseExpression(Precedence.Lowest);
+
+            // optional semicolon
+            if (PeekTokenIs(TokenType.Semicolon))
             {
+                // ';'
                 NextToken();
             }
 
             return returnStatement;
+        }
+
+        private IExpression ParseIfExpression()
+        {
+            // 'if'
+            var expression = new IfExpression() { Token = currentToken };
+
+            // '('
+            if (!ExpectPeek(TokenType.LParen))
+            {
+                return null;
+            }
+            // ???
+            NextToken();
+
+            expression.Condition = ParseExpression(Precedence.Lowest);
+
+            // ')'
+            if (!ExpectPeek(TokenType.RParen))
+            {
+                return null;
+            }
+            
+            // '{'
+            if (!ExpectPeek(TokenType.LBrace))
+            {
+                return null;
+            }
+
+            expression.Consequent = ParseBlockStatement();
+
+            // optional else
+            if (PeekTokenIs(TokenType.Else))
+            {
+                // 'else'
+                NextToken();
+
+                // '{'
+                if (!ExpectPeek(TokenType.LBrace))
+                {
+                    return null;
+                }
+
+                expression.Alternative = ParseBlockStatement();
+            }
+
+            return expression;
+        }
+
+        private BlockStatement ParseBlockStatement()
+        {
+            var block = new BlockStatement { Token = currentToken };
+            var statements = new List<IStatement>();
+            // skip '{'
+            NextToken();
+
+            while (!CurrentTokenIs(TokenType.RBrace) && !CurrentTokenIs(TokenType.Eof))
+            {
+                var stmt = ParseStatement();
+                if (stmt != null)
+                {
+                    statements.Add(stmt);
+                }
+                // ???
+                NextToken();
+            }
+
+            block.Statements = statements.ToArray();
+
+            return block;
         }
     }
 }
