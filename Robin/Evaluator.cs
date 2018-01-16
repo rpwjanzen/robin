@@ -90,10 +90,79 @@
             {
                 return EvalIdentifier(id, env);
             }
+            else if (node is FunctionLiteral fl)
+            {
+                return new Function { Parameters = fl.Parameters, Body = fl.Body, Env = env };
+            }
+            else if (node is CallExpression ce)
+            {
+                var fn = Eval(ce.Function, env);
+                if (IsError(fn))
+                {
+                    return fn;
+                }
+
+                var args = EvalExpressions(ce.Arguments, env);
+                if (args.Length == 1 && IsError(args[0]))
+                {
+                    return args[0];
+                }
+
+                if (fn is Function f)
+                {
+                    return AppyFunction(f, args);
+                }
+
+                return NewError($"now a function: {fn.Type()}");
+            }
             else
             {
                 return null;
             }
+        }
+
+        private IObject AppyFunction(Function fn, IObject[] args)
+        {
+            var extendedEnv = ExtendFunctionEnv(fn, args);
+            var evaluated = Eval(fn.Body, extendedEnv);
+            return UnwrapReturnValue(evaluated);
+        }
+
+        private IObject UnwrapReturnValue(IObject evaluated)
+        {
+            if (evaluated is ReturnValue rv)
+            {
+                return rv.Value;
+            }
+
+            return evaluated;
+        }
+
+        private Environment ExtendFunctionEnv(Function fn, IObject[] args)
+        {
+            var env = new Environment(fn.Env);
+             for (var i = 0; i < fn.Parameters.Length; i++)
+            {
+                env.Set(fn.Parameters[i].Value, args[i]);
+            }
+
+            return env;
+        }
+
+        private IObject[] EvalExpressions(IExpression[] arguments, Environment env)
+        {
+            var result = new System.Collections.Generic.List<IObject>();
+            foreach (var e in arguments)
+            {
+                var ev = Eval(e, env);
+                if (IsError(ev))
+                {
+                    return new IObject[] { ev };
+                }
+                result.Add(ev);
+            }
+
+            return result.ToArray();
         }
 
         private IObject EvalIdentifier(Identifier id, Environment env)

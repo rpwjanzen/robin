@@ -2,7 +2,7 @@
 
 namespace Robin.Obj
 {
-    enum ObjectType { Int, Boolean, Null, ReturnValue, Error }
+    enum ObjectType { Int, Boolean, Null, ReturnValue, Error, Function }
     interface IObject
     {
         ObjectType Type();
@@ -118,6 +118,23 @@ namespace Robin.Obj
         public ObjectType Type()
         {
             return ObjectType.Error;
+        }
+    }
+
+    class Function : IObject
+    {
+        public Ast.Identifier[] Parameters;
+        public Ast.BlockStatement Body;
+        public Environment Env;
+
+        public string Inspect()
+        {
+            return $"fn({String.Join(", ", (System.Collections.Generic.IEnumerable<Object>)Parameters)}) {{{System.Environment.NewLine}{Body}";
+        }
+
+        public ObjectType Type()
+        {
+            return ObjectType.Function;
         }
     }
 }
