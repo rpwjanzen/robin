@@ -115,6 +115,10 @@
 
                 return NewError($"now a function: {fn.Type()}");
             }
+            else if (node is StringLiteral s)
+            {
+                return new Obj.String { Value = s.Value };
+            }
             else
             {
                 return null;

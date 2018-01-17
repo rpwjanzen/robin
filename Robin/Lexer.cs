@@ -109,6 +109,9 @@
                 case '\0':
                     token = Token.Create(TokenType.Eof, '\0');
                     break;
+                case '"':
+                    token = new Token(TokenType.String, ReadString());
+                    break;
                 default:
                     if (Char.IsLetter(ch))
                     {
@@ -131,6 +134,17 @@
 
             ReadChar();
             return token;
+        }
+
+        private string ReadString()
+        {
+            var start = position + 1;
+            do
+            {
+                ReadChar();
+            } while (ch != '"' && ch != '\0');
+
+            return Input.Substring(start, position - start);
         }
 
         private string ReadIdentifier()

@@ -246,4 +246,13 @@
             return $"{Function} ({String.Join(", ", (IEnumerable<IExpression>)Arguments)})";
         }
     }
+
+    public sealed class StringLiteral : IExpression
+    {
+        public Token Token;
+        public string Value;
+
+        public string TokenLiteral() { return Token.Literal; }
+        public string String() { return Token.Literal; }
+    }
 }

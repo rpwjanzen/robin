@@ -78,6 +78,7 @@
             RegisterPrefix(TokenType.LParen, ParseGroupedExpression);
             RegisterPrefix(TokenType.If, ParseIfExpression);
             RegisterPrefix(TokenType.Function, ParseFunctionLiteral);
+            RegisterPrefix(TokenType.String, ParseStringLiteral);
 
             RegisterInfix(TokenType.Plus, ParseInfixExpression);
             RegisterInfix(TokenType.Minus, ParseInfixExpression);
@@ -88,6 +89,11 @@
             RegisterInfix(TokenType.Eq, ParseInfixExpression);
             RegisterInfix(TokenType.NotEq, ParseInfixExpression);
             RegisterInfix(TokenType.LParen, ParseCallExpression);
+        }
+
+        private IExpression ParseStringLiteral()
+        {
+            return new StringLiteral { Token = currentToken, Value = currentToken.Literal };
         }
 
         private IExpression ParseCallExpression(IExpression function)
