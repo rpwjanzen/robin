@@ -2,7 +2,7 @@
 
 namespace Robin.Obj
 {
-    enum ObjectType { Int, Boolean, Null, ReturnValue, Error, Function, String }
+    enum ObjectType { Int, Boolean, Null, ReturnValue, Error, Function, String, Builtin }
     interface IObject
     {
         ObjectType Type();
@@ -150,6 +150,23 @@ namespace Robin.Obj
         public ObjectType Type()
         {
             return ObjectType.String;
+        }
+    }
+
+    delegate IObject BuiltinFunction(params IObject[] args);
+
+    class Builtin : IObject
+    {
+        public BuiltinFunction Fn;
+
+        public string Inspect()
+        {
+            return "builtin function";
+        }
+
+        public ObjectType Type()
+        {
+            return ObjectType.Builtin;
         }
     }
 }

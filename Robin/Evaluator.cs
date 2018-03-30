@@ -7,6 +7,25 @@
 
     class Evaluator
     {
+        System.Collections.Generic.Dictionary<string, Obj.Builtin> builtins = new System.Collections.Generic.Dictionary<string, Builtin>
+        {
+            {
+                "len", new Builtin { Fn = (args) => {
+                    if (args.Length != 1)
+                    {
+                        return NewError($"wrong number of arguments. got={args.Length}, want=1");
+                    }
+
+                    if (args[0] is Obj.String s)
+                    {
+                        return new Integer { Value = s.Value.Length };
+                    }
+
+                    return NewError($"argument to `len` not supported, got {args[0].Type()}");
+                } }
+            }
+        };
+
         public IObject Eval(INode node, Environment env)
         {
             if (node is Program program)
@@ -108,12 +127,12 @@
                     return args[0];
                 }
 
-                if (fn is Function f)
+                if (fn is Function || fn is Builtin)
                 {
-                    return AppyFunction(f, args);
+                    return AppyFunction(fn, args);
                 }
 
-                return NewError($"now a function: {fn.Type()}");
+                return NewError($"not a function: {fn.Type()}");
             }
             else if (node is StringLiteral s)
             {
@@ -125,11 +144,21 @@
             }
         }
 
-        private IObject AppyFunction(Function fn, IObject[] args)
+        private IObject AppyFunction(IObject fn, IObject[] args)
         {
-            var extendedEnv = ExtendFunctionEnv(fn, args);
-            var evaluated = Eval(fn.Body, extendedEnv);
-            return UnwrapReturnValue(evaluated);
+            if (fn is Function f)
+            {
+                var extendedEnv = ExtendFunctionEnv(f, args);
+                var evaluated = Eval(f.Body, extendedEnv);
+                return UnwrapReturnValue(evaluated);
+            }
+
+            if (fn is Builtin b)
+            {
+                return b.Fn(args);
+            }
+
+            return NewError($"not a function: {fn.Type()}");
         }
 
         private IObject UnwrapReturnValue(IObject evaluated)
@@ -175,10 +204,13 @@
             {
                 return obj;
             }
-            else
+
+            if (builtins.TryGetValue(id.Value, out Builtin b))
             {
-                return NewError($"identifier not found: {id.Value}");
+                return b;
             }
+
+            return NewError($"identifier not found: {id.Value}");
         }
 
         private IObject EvalBlockStatement(BlockStatement bStmt, Environment env)
@@ -247,6 +279,11 @@
                 return EvalIntegerInfixExpression(@operator, li, ri);
             }
 
+            if (left is Obj.String ls && right is Obj.String rs)
+            {
+                return EvalStringInfixExpression(@operator, ls, rs);
+            }
+
             if (left.Type() != right.Type())
             {
                 return NewError($"type mismatch: {left.Type()} {@operator} {right.Type()}");
@@ -261,6 +298,18 @@
                 default:
                     return NewError($"unknown operator: {@operator}");
             }
+        }
+
+        private IObject EvalStringInfixExpression(string @operator, Obj.String ls, Obj.String rs)
+        {
+            if (@operator == "+")
+            {
+                var leftVal = ls.Value;
+                var rightVal = rs.Value;
+                return new Obj.String { Value = leftVal + rightVal };
+            }
+
+            return NewError($"unknown operator: {ls.Type()} {@operator} {rs.Type()}");
         }
 
         private IObject EvalIntegerInfixExpression(string @operator, Integer li, Integer ri)
@@ -358,7 +407,7 @@
             return result;
         }
 
-        private Error NewError(string message)
+        private static Error NewError(string message)
         {
             return new Error { Message = message };
         }
