@@ -31,7 +31,9 @@
         Return,
         Eq,
         NotEq,
-        String
+        String,
+        LBracket,
+        RBracket
     };
 
     public struct Token

@@ -2,11 +2,26 @@
 
 namespace Robin.Obj
 {
-    enum ObjectType { Int, Boolean, Null, ReturnValue, Error, Function, String, Builtin }
+    enum ObjectType { Int, Boolean, Null, ReturnValue, Error, Function, String, Builtin, Array }
     interface IObject
     {
         ObjectType Type();
         string Inspect();
+    }
+
+    class Array : IObject
+    {
+        public IObject[] Elements;
+        public ObjectType Type() => ObjectType.Array;
+        public string Inspect()
+        {
+            var rs = new System.Collections.Generic.List<string>();
+            foreach (var x in Elements)
+            {
+                rs.Add(x.Inspect());
+            }
+            return $"[{string.Join(", ", rs)}]";
+        }
     }
 
     class Integer : IObject

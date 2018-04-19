@@ -9,7 +9,7 @@
     public delegate IExpression PrefixFn();
     public delegate IExpression InfixFn(IExpression e);
 
-    enum Precedence { Lowest, Equal, LessGreater, Sum, Product, Prefix, Call }
+    enum Precedence { Lowest, Equal, LessGreater, Sum, Product, Prefix, Call, Index }
 
     public sealed class Parser
     {
@@ -30,7 +30,8 @@
             { TokenType.Minus, Precedence.Sum },
             { TokenType.Asterisk, Precedence.Product },
             { TokenType.Slash, Precedence.Product },
-            { TokenType.LParen, Precedence.Call }
+            { TokenType.LParen, Precedence.Call },
+            { TokenType.LBracket, Precedence.Index }
         };
 
         private Precedence PeekPrecedence()
@@ -79,6 +80,7 @@
             RegisterPrefix(TokenType.If, ParseIfExpression);
             RegisterPrefix(TokenType.Function, ParseFunctionLiteral);
             RegisterPrefix(TokenType.String, ParseStringLiteral);
+            RegisterPrefix(TokenType.LBracket, ParseArrayLiteral);
 
             RegisterInfix(TokenType.Plus, ParseInfixExpression);
             RegisterInfix(TokenType.Minus, ParseInfixExpression);
@@ -89,6 +91,62 @@
             RegisterInfix(TokenType.Eq, ParseInfixExpression);
             RegisterInfix(TokenType.NotEq, ParseInfixExpression);
             RegisterInfix(TokenType.LParen, ParseCallExpression);
+            RegisterInfix(TokenType.LBracket, ParseIndexExpression);
+        }
+
+        private IExpression ParseIndexExpression(IExpression left)
+        {
+            var exp = new IndexExpression { Token = currentToken, Left = left };
+            NextToken();
+            exp.Index = ParseExpression(Precedence.Lowest);
+            if (!ExpectPeek(TokenType.RBracket))
+            {
+                return null;
+            }
+
+            return exp;
+        }
+
+        private IExpression ParseArrayLiteral()
+        {
+            var arr = new ArrayLiteral { Token = this.currentToken };
+            arr.Elements = ParseExpressionList(TokenType.RBracket);
+            return arr;
+        }
+
+        private IExpression[] ParseExpressionList(TokenType end)
+        {
+            var list = new List<IExpression>();
+            if (PeekTokenIs(end))
+            {
+                // skip end token
+                NextToken();
+                return list.ToArray();
+            }
+
+            // skip start token?
+            NextToken();
+
+            // parse first item in array
+            list.Add(ParseExpression(Precedence.Lowest));
+
+            // parse rest of item in array
+            while(PeekTokenIs(TokenType.Comma))
+            {
+                // skip comma
+                NextToken();
+                NextToken();
+
+                list.Add(ParseExpression(Precedence.Lowest));
+            }
+
+            if (!ExpectPeek(end))
+            {
+                Console.WriteLine("null");
+                return null;
+            }
+
+            return list.ToArray();
         }
 
         private IExpression ParseStringLiteral()
@@ -99,7 +157,7 @@
         private IExpression ParseCallExpression(IExpression function)
         {
             var exp = new CallExpression { Token = currentToken, Function = function };
-            exp.Arguments = ParseCallArguments();
+            exp.Arguments = ParseExpressionList(TokenType.RParen);
             return exp;
         }
 

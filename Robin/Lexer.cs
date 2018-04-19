@@ -106,6 +106,12 @@
                 case '>':
                     token = Token.Create(TokenType.Gt, ch);
                     break;
+                case '[':
+                    token = Token.Create(TokenType.LBracket, ch);
+                    break;
+                case ']':
+                    token = Token.Create(TokenType.RBracket, ch);
+                    break;
                 case '\0':
                     token = Token.Create(TokenType.Eof, '\0');
                     break;

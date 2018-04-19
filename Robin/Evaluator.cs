@@ -10,19 +10,128 @@
         System.Collections.Generic.Dictionary<string, Obj.Builtin> builtins = new System.Collections.Generic.Dictionary<string, Builtin>
         {
             {
-                "len", new Builtin { Fn = (args) => {
-                    if (args.Length != 1)
+                "len", new Builtin {
+                    Fn = (IObject[] args) =>
                     {
-                        return NewError($"wrong number of arguments. got={args.Length}, want=1");
-                    }
+                        if (args.Length != 1)
+                        {
+                            return NewError($"wrong number of arguments. got={args.Length}, want=1");
+                        }
 
-                    if (args[0] is Obj.String s)
+                        if (args[0] is Obj.String s)
+                        {
+                            return new Integer { Value = s.Value.Length };
+                        } else if (args[0] is Obj.Array arr)
+                        {
+                            return new Integer { Value = arr.Elements.LongLength };
+                        }
+
+                        return NewError($"argument to `len` not supported, got {args[0].Type()}");
+                    }
+                }
+            },
+            {
+                "first", new Builtin
+                {
+                    Fn = (IObject[] args) =>
                     {
-                        return new Integer { Value = s.Value.Length };
-                    }
+                        if (args.Length != 1)
+                        {
+                            return NewError($"wrong number of arguments. got={args.Length}, want=1");
+                        }
 
-                    return NewError($"argument to `len` not supported, got {args[0].Type()}");
-                } }
+                        if (args[0].Type() != ObjectType.Array)
+                        {
+                            return NewError($"argument to `first` must be ARRAY, got {args[0].Type()}");
+                        }
+
+                        var arr = (Obj.Array)args[0];
+                        if (arr.Elements.Length > 0)
+                        {
+                            return arr.Elements[0];
+                        }
+
+                        return null;
+                    }
+                }
+            },
+            {
+                "last", new Builtin
+                {
+                    Fn = (IObject[] args) =>
+                    {
+                        if (args.Length != 1)
+                        {
+                            return NewError($"wrong number of arguments, got={args.Length}, want=1");
+                        }
+
+                        if (args[0].Type() != ObjectType.Array)
+                        {
+                            return NewError($"argument to `last` must be ARRAY, got {args[0].Type()}");
+                        }
+
+                        var arr = (Obj.Array)args[0];
+                        var length = arr.Elements.LongLength;
+                        if (length > 0)
+                        {
+                            return arr.Elements[length - 1];
+                        }
+
+                        return null;
+                    }
+                }
+            },
+            {
+                "rest", new Builtin
+                {
+                    Fn = (IObject[] args) =>
+                    {
+                        if (args.Length != 1)
+                        {
+                            return NewError($"wrong number of arguments, got={args.Length}, want=1");
+                        }
+
+                        if (args[0].Type() != ObjectType.Array)
+                        {
+                            return NewError($"argument to `rest` must be ARRAY, got {args[0].Type()}");
+                        }
+
+                        var arr = (Obj.Array)args[0];
+                        var length = arr.Elements.LongLength;
+                        if (length > 0)
+                        {
+                            var newElements = new IObject[length - 1];
+                            System.Array.Copy(arr.Elements, 1, newElements, 0, length - 1);
+                            return new Obj.Array { Elements = newElements };
+                        }
+
+                        return null;
+                    }
+                }
+            },
+            {
+                "push", new Builtin
+                {
+                    Fn = (IObject[] args) =>
+                    {
+                        if (args.Length != 2)
+                        {
+                            return NewError($"wrong number of arguments, got={args.Length}, want=2");
+                        }
+
+                        if (args[0].Type() != ObjectType.Array)
+                        {
+                            return NewError($"argument to `push` must be ARRAY, got {args[0].Type()}");
+                        }
+
+                        var arr = (Obj.Array)args[0];
+                        var length = arr.Elements.Length;
+                        var newElements = new IObject[length + 1];
+                        System.Array.Copy(arr.Elements, 0, newElements, 0, length);
+                        newElements[length] = args[1];
+                        return new Obj.Array { Elements = newElements };
+                    }
+                }
             }
         };
 
@@ -138,10 +247,56 @@
             {
                 return new Obj.String { Value = s.Value };
             }
+            else if (node is ArrayLiteral arr)
+            {
+                var elements = EvalExpressions(arr.Elements, env);
+                if (elements.Length == 1 && IsError(elements[0]))
+                {
+                    return elements[0];
+                }
+                return new Obj.Array { Elements = elements };
+            }
+            else if (node is IndexExpression iexpr)
+            {
+                var left = Eval(iexpr.Left, env);
+                if (IsError(left))
+                {
+                    return left;
+                }
+                var index = Eval(iexpr.Index, env);
+                if (IsError(index))
+                {
+                    return index;
+                }
+
+                return EvalIndexExpression(left, index);
+            }
             else
             {
                 return null;
             }
+        }
+
+        private IObject EvalIndexExpression(IObject left, IObject index)
+        {
+            if (left.Type() == ObjectType.Array && index.Type() == ObjectType.Int)
+            {
+                return EvalArrayIndexExpression((Obj.Array)left, (Integer)index);
+            }
+            return NewError($"index operator not supported: {left.Type()}");
+        }
+
+        private IObject EvalArrayIndexExpression(Obj.Array left, Integer index)
+        {
+            var idx = index.Value;
+            var max = left.Elements.Length - 1;
+
+            if (idx < 0 || idx > max)
+            {
+                return null;
+            }
+
+            return left.Elements[idx];
         }
 
         private IObject AppyFunction(IObject fn, IObject[] args)
@@ -174,7 +329,7 @@
         private Environment ExtendFunctionEnv(Function fn, IObject[] args)
         {
             var env = new Environment(fn.Env);
-             for (var i = 0; i < fn.Parameters.Length; i++)
+            for (var i = 0; i < fn.Parameters.Length; i++)
             {
                 env.Set(fn.Parameters[i].Value, args[i]);
             }

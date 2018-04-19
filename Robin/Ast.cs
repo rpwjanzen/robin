@@ -255,4 +255,26 @@
         public string TokenLiteral() { return Token.Literal; }
         public string String() { return Token.Literal; }
     }
+
+    public sealed class ArrayLiteral : IExpression
+    {
+        public Token Token;
+        public IExpression[] Elements;
+
+        public string TokenLiteral() => Token.Literal;
+        public override string ToString()
+        {
+            return $"[{String.Join(", ", (IEnumerable<IExpression>)Elements)}]";
+        }
+    }
+
+    public sealed class IndexExpression : IExpression
+    {
+        public Token Token;
+        public IExpression Left;
+        public IExpression Index;
+
+        public string TokenLiteral() => Token.Literal;
+        public override string ToString() => $"({Left}[{Index}])";
+    }
 }
