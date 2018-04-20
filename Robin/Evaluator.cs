@@ -51,7 +51,7 @@
                             return arr.Elements[0];
                         }
 
-                        return null;
+                        return Null.Instance
                     }
                 }
             },
@@ -77,7 +77,7 @@
                             return arr.Elements[length - 1];
                         }
 
-                        return null;
+                        return Null.Instance;
                     }
                 }
             },
@@ -105,7 +105,7 @@
                             return new Obj.Array { Elements = newElements };
                         }
 
-                        return null;
+                        return Obj.Null.Instance;
                     }
                 }
             },
@@ -224,9 +224,8 @@
                 }
 
                 env.Set(letStmt.Name.Value, val);
-
-                // TODO: determine if we want to return val instead
-                return null;
+                // return value that is assigned to let expression
+                return val;
             }
             else if (node is Identifier id)
             {
@@ -291,7 +290,7 @@
             }
             else
             {
-                return null;
+                return Obj.Null.Instance;
             }
         }
 
@@ -348,7 +347,7 @@
 
             if (!hashObject.Pairs.TryGetValue(key.HashKey(), out HashPair pair))
             {
-                return null;
+                return Null.Instance;
             }
 
             return pair.Value;
@@ -361,7 +360,7 @@
 
             if (idx < 0 || idx > max)
             {
-                return null;
+                return Obj.Null.Instance;
             }
 
             return left.Elements[idx];
