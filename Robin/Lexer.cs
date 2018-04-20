@@ -118,6 +118,9 @@
                 case '"':
                     token = new Token(TokenType.String, ReadString());
                     break;
+                case ':':
+                    token = Token.Create(TokenType.Colon, ch);
+                    break;
                 default:
                     if (Char.IsLetter(ch))
                     {

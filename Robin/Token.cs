@@ -33,7 +33,8 @@
         NotEq,
         String,
         LBracket,
-        RBracket
+        RBracket,
+        Colon
     };
 
     public struct Token

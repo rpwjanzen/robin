@@ -132,6 +132,20 @@
                         return new Obj.Array { Elements = newElements };
                     }
                 }
+            },
+            {
+                "puts", new Builtin
+                {
+                    Fn = (IObject[] args) =>
+                    {
+                        foreach (var arg in args)
+                        {
+                            Console.WriteLine(arg.Inspect());
+                        }
+
+                        return Obj.Null.Instance;
+                    }
+                }
             }
         };
 
@@ -271,10 +285,44 @@
 
                 return EvalIndexExpression(left, index);
             }
+            else if (node is HashLiteral hl)
+            {
+                return EvalHashLiteral(hl, env);
+            }
             else
             {
                 return null;
             }
+        }
+
+        private IObject EvalHashLiteral(HashLiteral hl, Environment env)
+        {
+            var pairs = new System.Collections.Generic.Dictionary<Obj.HashKey, Obj.HashPair>();
+            foreach (var kvp in hl.Pairs)
+            {
+                var key = Eval(kvp.Key, env);
+                if (IsError(key))
+                {
+                    return key;
+                }
+
+                var hashKey = key as Hashable;
+                if (hashKey == null)
+                {
+                    return NewError($"unusable as hash key: {key.Type()}");
+                }
+
+                var value = Eval(kvp.Value, env);
+                if (IsError(value))
+                {
+                    return value;
+                }
+
+                var hashed = hashKey.HashKey();
+                pairs[hashed] = new HashPair { Key = key, Value = value };
+            }
+
+            return new Obj.Hash { Pairs = pairs };
         }
 
         private IObject EvalIndexExpression(IObject left, IObject index)
@@ -282,8 +330,28 @@
             if (left.Type() == ObjectType.Array && index.Type() == ObjectType.Int)
             {
                 return EvalArrayIndexExpression((Obj.Array)left, (Integer)index);
+            } else if (left.Type() == ObjectType.Hash)
+            {
+                return EvalHashExpression(left, index);
             }
             return NewError($"index operator not supported: {left.Type()}");
+        }
+
+        private IObject EvalHashExpression(IObject hash, IObject index)
+        {
+            var hashObject = (Hash)hash;
+            var key = index as Hashable;
+            if (key == null)
+            {
+                return NewError($"unusable as hash key: {index.Type()}");
+            }
+
+            if (!hashObject.Pairs.TryGetValue(key.HashKey(), out HashPair pair))
+            {
+                return null;
+            }
+
+            return pair.Value;
         }
 
         private IObject EvalArrayIndexExpression(Obj.Array left, Integer index)

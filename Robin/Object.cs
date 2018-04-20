@@ -2,7 +2,7 @@
 
 namespace Robin.Obj
 {
-    enum ObjectType { Int, Boolean, Null, ReturnValue, Error, Function, String, Builtin, Array }
+    enum ObjectType { Int, Boolean, Null, ReturnValue, Error, Function, String, Builtin, Array, Hash }
     interface IObject
     {
         ObjectType Type();
@@ -24,7 +24,7 @@ namespace Robin.Obj
         }
     }
 
-    class Integer : IObject
+    class Integer : IObject, Hashable
     {
         public Int64 Value;
 
@@ -47,9 +47,14 @@ namespace Robin.Obj
         {
             return Value.GetHashCode();
         }
+
+        public HashKey HashKey()
+        {
+            return new Obj.HashKey { Type = ObjectType.Int, Value = (UInt64)Value };
+        }
     }
 
-    class Boolean : IObject
+    class Boolean : IObject, Hashable
     {
         public readonly bool Value;
 
@@ -76,6 +81,15 @@ namespace Robin.Obj
         public override int GetHashCode()
         {
             return Value.GetHashCode();
+        }
+
+        public HashKey HashKey()
+        {
+            return new HashKey
+            {
+                Type = ObjectType.Boolean,
+                Value = Value == true ? 1UL : 0UL
+            };
         }
     }
 
@@ -153,9 +167,18 @@ namespace Robin.Obj
         }
     }
 
-    class String : IObject
+    class String : IObject, Hashable
     {
         public string Value;
+
+        public HashKey HashKey()
+        {
+            return new HashKey
+            {
+                Type = ObjectType.String,
+                Value = (UInt64)Value.GetHashCode()
+            };
+        }
 
         public string Inspect()
         {
@@ -183,5 +206,55 @@ namespace Robin.Obj
         {
             return ObjectType.Builtin;
         }
+    }
+
+    class HashKey
+    {
+        public ObjectType Type;
+        public UInt64 Value;
+
+        public override bool Equals(object obj)
+        {
+            var other = obj as HashKey;
+            if (other == null)
+            {
+                return false;
+            }
+
+            return Type.Equals(other.Type) && Value.Equals(other.Value);
+        }
+
+        public override int GetHashCode()
+        {
+            return Type.GetHashCode() ^ Value.GetHashCode();
+        }
+    }
+
+    sealed class HashPair
+    {
+        public IObject Key;
+        public IObject Value;
+    }
+
+    class Hash : IObject
+    {
+        public System.Collections.Generic.Dictionary<HashKey, HashPair> Pairs;
+        public ObjectType Type() => ObjectType.Hash;
+
+        public string Inspect()
+        {
+            var pairs = new System.Collections.Generic.List<string>();
+            foreach(var pair in Pairs)
+            {
+                pairs.Add($"{pair.Value.Key.Inspect()}: {pair.Value.Value.Inspect()}");
+            }
+
+            return "{" + System.String.Join(", ", pairs) + "}";
+        }
+    }
+
+    interface Hashable
+    {
+        HashKey HashKey();
     }
 }

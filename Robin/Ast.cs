@@ -277,4 +277,22 @@
         public string TokenLiteral() => Token.Literal;
         public override string ToString() => $"({Left}[{Index}])";
     }
+
+    public sealed class HashLiteral : IExpression
+    {
+        public Token Token;
+        public Dictionary<IExpression, IExpression> Pairs;
+
+        public string TokenLiteral() => Token.Literal;
+        public override string ToString()
+        {
+            var text = new List<string>();
+            foreach (var kvp in Pairs)
+            {
+                text.Add($"{kvp.Key}:{kvp.Value}");
+            }
+
+            return string.Join(", ", text);
+        }
+    }
 }
