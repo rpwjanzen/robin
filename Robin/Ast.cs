@@ -4,8 +4,14 @@
     using System.Collections.Generic;
 
     public interface INode { }
-    public interface IStatement : INode { }
-    public interface IExpression : INode { }
+    public interface IStatement : INode
+    {
+        string TokenLiteral();
+    }
+    public interface IExpression : INode
+    {
+        string TokenLiteral();
+    }
 
     public sealed class IfExpression : IExpression
     {
@@ -13,6 +19,7 @@
         public IExpression Condition;
         public BlockStatement Consequent;
         public BlockStatement Alternative;
+        public string TokenLiteral() => Token.Literal;
 
         public override string ToString()
         {
@@ -58,6 +65,7 @@
     {
         public Token Token;
         public IStatement[] Statements;
+        public string TokenLiteral() => Token.Literal;
 
         public override string ToString()
         {
@@ -69,6 +77,7 @@
     {
         public Token Token;
         public bool Value;
+        public string TokenLiteral() => Token.Literal;
 
         public override bool Equals(object obj)
         {
@@ -96,6 +105,7 @@
     {
         public Token Token;
         public string Value;
+        public string TokenLiteral() => Token.Literal;
 
         public override string ToString()
         {
@@ -108,6 +118,7 @@
         public Token Token;
         public Identifier Name;
         public IExpression Value;
+        public string TokenLiteral() => Token.Literal;
 
         public override string ToString()
         {
@@ -119,6 +130,7 @@
     {
         public Token Token;
         public IExpression ReturnValue;
+        public string TokenLiteral() => Token.Literal;
 
         public override bool Equals(object obj)
         {
@@ -147,6 +159,7 @@
         public Token Token;
         public string Operator;
         public IExpression Right;
+        public string TokenLiteral() => Token.Literal;
 
         public override string ToString()
         {
@@ -160,6 +173,7 @@
         public IExpression Left;
         public string Operator;
         public IExpression Right;
+        public string TokenLiteral() => Token.Literal;
 
         public override string ToString()
         {
@@ -173,6 +187,7 @@
         public Token Token;
 
         public IExpression Expression;
+        public string TokenLiteral() => Token.Literal;
 
         public override string ToString()
         {
@@ -184,6 +199,7 @@
     {
         public Token Token;
         public Int64 Value;
+        public string TokenLiteral() => Token.Literal;
 
         public override bool Equals(object obj)
         {
@@ -228,6 +244,7 @@
         public Token Token;
         public Identifier[] Parameters;
         public BlockStatement Body;
+        public string TokenLiteral() => Token.Literal;
 
         public override string ToString()
         {
@@ -241,6 +258,7 @@
         public IExpression Function;
         public IExpression[] Arguments;
 
+        public string TokenLiteral() => Token.Literal;
         public override string ToString()
         {
             return $"{Function} ({String.Join(", ", (IEnumerable<IExpression>)Arguments)})";
@@ -293,6 +311,111 @@
             }
 
             return string.Join(", ", text);
+        }
+    }
+
+    delegate INode ModifierFunc(INode node);
+
+    sealed class Modifier
+    {
+        public static INode Modify(INode node, ModifierFunc modifier)
+        {
+            if (node is Program p)
+            {
+                for (var i = 0; i < p.Statements.Length; i++)
+                {
+                    p.Statements[i] = (IStatement)Modify(p.Statements[i], modifier);
+                }
+            }
+            else if (node is ExpressionStatement es)
+            {
+                es.Expression = (IExpression)Modify(es.Expression, modifier);
+            }
+            else if (node is InfixExpression ie)
+            {
+                ie.Left = (IExpression)Modify(ie.Left, modifier);
+                ie.Right = (IExpression)Modify(ie.Right, modifier);
+            }
+            else if (node is PrefixExpression pe)
+            {
+                pe.Right = (IExpression)Modify(pe.Right, modifier);
+            }
+            else if (node is IndexExpression idxe)
+            {
+                idxe.Left = (IExpression)Modify(idxe.Left, modifier);
+                idxe.Index = (IExpression)Modify(idxe.Index, modifier);
+            }
+            else if (node is IfExpression ife)
+            {
+                ife.Condition = (IExpression)Modify(ife.Condition, modifier);
+                ife.Consequent = (BlockStatement)Modify(ife.Consequent, modifier);
+                if (ife.Alternative != null)
+                {
+                    ife.Alternative = (BlockStatement)Modify(ife.Alternative, modifier);
+                }
+            }
+            else if (node is BlockStatement bs)
+            {
+                for (var i = 0; i < bs.Statements.Length; i++)
+                {
+                    bs.Statements[i] = (IStatement)Modify(bs.Statements[i], modifier);
+                }
+            }
+            else if (node is ReturnStatement rs)
+            {
+                rs.ReturnValue = (IExpression)Modify(rs.ReturnValue, modifier);
+            }
+            else if (node is LetStatement ls)
+            {
+                ls.Value = (IExpression)Modify(ls.Value, modifier);
+            }
+            else if (node is FunctionLiteral fl)
+            {
+                for (var i = 0; i < fl.Parameters.Length; i++)
+                {
+                    fl.Parameters[i] = (Identifier)Modify(fl.Parameters[i], modifier);
+                }
+                fl.Body = (BlockStatement)Modify(fl.Body, modifier);
+            }
+            else if (node is ArrayLiteral al)
+            {
+                for (var i = 0; i < al.Elements.Length; i++)
+                {
+                    al.Elements[i] = (IExpression)Modify(al.Elements[i], modifier);
+                }
+            }
+            else if (node is HashLiteral hl)
+            {
+                var newPairs = new Dictionary<IExpression, IExpression>();
+                foreach (var kvp in hl.Pairs)
+                {
+                    var newKey = (IExpression)Modify(kvp.Key, modifier);
+                    var newVal = (IExpression)Modify(kvp.Value, modifier);
+                    newPairs[newKey] = newVal;
+                }
+                hl.Pairs = newPairs;
+            }
+
+            return modifier(node);
+        }
+    }
+
+    class MacroLiteral : IExpression
+    {
+        public Token Token;
+        public Identifier[] Parameters;
+        public BlockStatement Body;
+
+        public string TokenLiteral() => Token.Literal;
+        public override string ToString()
+        {
+            var args = new List<string>();
+            foreach (var p in Parameters)
+            {
+                args.Add(p.ToString());
+            }
+
+            return $"{TokenLiteral()}({String.Join(", ", args)}){Body}";
         }
     }
 }

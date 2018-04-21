@@ -34,7 +34,8 @@
         String,
         LBracket,
         RBracket,
-        Colon
+        Colon,
+        Macro
     };
 
     public struct Token
@@ -87,6 +88,7 @@
             { "if", TokenType.If },
             { "else", TokenType.Else },
             { "return", TokenType.Return },
+            { "macro", TokenType.Macro }
         };
 
         public static TokenType LookupIdent(string ident)

@@ -2,11 +2,38 @@
 
 namespace Robin.Obj
 {
-    enum ObjectType { Int, Boolean, Null, ReturnValue, Error, Function, String, Builtin, Array, Hash }
+    enum ObjectType { Int, Boolean, Null, ReturnValue, Error, Function, String, Builtin, Array, Hash, Quote, Macro }
     interface IObject
     {
         ObjectType Type();
         string Inspect();
+    }
+
+    class Macro : IObject
+    {
+        public Ast.Identifier[] Parameters;
+        public Ast.BlockStatement Body;
+        public Environment Env;
+        public string Inspect()
+        {
+            var args = new System.Collections.Generic.List<string>();
+            foreach (var p in Parameters)
+            {
+                args.Add(p.ToString());
+            }
+
+            return $"macro({System.String.Join(", ", args)})" + "{" + System.Environment.NewLine
+                + Body.ToString() + System.Environment.NewLine + "}";
+        }
+
+        public ObjectType Type() => ObjectType.Macro;
+    }
+
+    class Quote : IObject
+    {
+        public Ast.INode Node;
+        public ObjectType Type() => ObjectType.Quote;
+        public string Inspect() => $"QUOTE({Node})";
     }
 
     class Array : IObject

@@ -12,6 +12,8 @@
         public static void Start(TextReader reader, TextWriter writer)
         {
             var env = new Environment();
+            var macroEnv = new Environment();
+            var evaluator = new Eval.Evaluator();
 
             writer.Write(Prompt);
             var line = reader.ReadLine();
@@ -29,11 +31,12 @@
                     continue;
                 }
 
-                var evaluator = new Eval.Evaluator();
-                var result = evaluator.Eval(program, env);
-                if (result != null)
+                evaluator.DefineMacros(program, macroEnv);
+                var expanded = evaluator.ExpandMacros(program, macroEnv);
+                var evaluated = evaluator.Eval(expanded, env);
+                if (evaluated != null)
                 {
-                    writer.WriteLine(result.Inspect());
+                    writer.WriteLine(evaluated.Inspect());
                 }
 
                 writer.Write(Prompt);

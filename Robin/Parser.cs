@@ -72,6 +72,7 @@
 
             RegisterPrefix(TokenType.Ident, ParseIdentifier);
             RegisterPrefix(TokenType.Int, ParseInt);
+            RegisterPrefix(TokenType.String, ParseStringLiteral);
             RegisterPrefix(TokenType.Bang, ParsePrefixExpression);
             RegisterPrefix(TokenType.Minus, ParsePrefixExpression);
             RegisterPrefix(TokenType.True, ParseBoolean);
@@ -79,7 +80,7 @@
             RegisterPrefix(TokenType.LParen, ParseGroupedExpression);
             RegisterPrefix(TokenType.If, ParseIfExpression);
             RegisterPrefix(TokenType.Function, ParseFunctionLiteral);
-            RegisterPrefix(TokenType.String, ParseStringLiteral);
+            RegisterPrefix(TokenType.Macro, ParseMacroLiteral);
             RegisterPrefix(TokenType.LBracket, ParseArrayLiteral);
             RegisterPrefix(TokenType.LBrace, ParseHashLiteral);
 
@@ -91,8 +92,29 @@
             RegisterInfix(TokenType.Slash, ParseInfixExpression);
             RegisterInfix(TokenType.Eq, ParseInfixExpression);
             RegisterInfix(TokenType.NotEq, ParseInfixExpression);
+
             RegisterInfix(TokenType.LParen, ParseCallExpression);
             RegisterInfix(TokenType.LBracket, ParseIndexExpression);
+        }
+
+        private IExpression ParseMacroLiteral()
+        {
+            var lit = new MacroLiteral { Token = currentToken };
+
+            if (!ExpectPeek(TokenType.LParen))
+            {
+                return null;
+            }
+
+            lit.Parameters = ParseFunctionParameters();
+
+            if (!ExpectPeek(TokenType.LBrace))
+            {
+                return null;
+            }
+            lit.Body = ParseBlockStatement();
+
+            return lit;
         }
 
         private IExpression ParseHashLiteral()

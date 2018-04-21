@@ -51,7 +51,7 @@
                             return arr.Elements[0];
                         }
 
-                        return Null.Instance
+                        return Null.Instance;
                     }
                 }
             },
@@ -237,6 +237,11 @@
             }
             else if (node is CallExpression ce)
             {
+                if (ce.Function.TokenLiteral() == "quote")
+                {
+                    return this.Quote(ce.Arguments[0], env);
+                }
+
                 var fn = Eval(ce.Function, env);
                 if (IsError(fn))
                 {
@@ -292,6 +297,76 @@
             {
                 return Obj.Null.Instance;
             }
+        }
+
+        private IObject Quote(INode node, Environment env)
+        {
+            node = EvalUnquoteCalls(node, env);
+            return new Quote { Node = node};
+        }
+
+        private INode EvalUnquoteCalls(INode quoted, Environment env)
+        {
+            ModifierFunc f = new ModifierFunc(node =>
+            {
+                if (!IsUnquoteCall(node))
+                {
+                    return node;
+                }
+
+                var call = node as CallExpression;
+                if (call == null)
+                {
+                    return node;
+                }
+
+                if (call.Arguments.Length != 1)
+                {
+                    return node;
+                }
+
+                var unquoted = Eval(call.Arguments[0], env);
+                return ConvertObjectToAstNode(unquoted);
+            });
+            return Modifier.Modify(quoted, f);
+        }
+
+        private INode ConvertObjectToAstNode(IObject obj)
+        {
+            if (obj is Integer i)
+            {
+                var t = new Token(TokenType.Int, i.Value.ToString());
+                return new IntegerLiteral { Token = t, Value = i.Value };
+            }
+            else if (obj is Obj.Boolean b)
+            {
+                Token t;
+                if (b.Value)
+                {
+                    t = new Token(TokenType.True, "true");
+                }
+                else
+                {
+                    t = new Token(TokenType.False, "false");
+                }
+                return new Ast.Boolean { Token = t, Value = b.Value };
+            }
+            else if (obj is Quote q)
+            {
+                return q.Node;
+            }
+
+            return null;
+        }
+
+        private bool IsUnquoteCall(INode node)
+        {
+            if (node is CallExpression ce)
+            {
+                return ce.Function.TokenLiteral() == "unquote";
+            }
+
+            return false;
         }
 
         private IObject EvalHashLiteral(HashLiteral hl, Environment env)
@@ -637,6 +712,118 @@
         private bool IsError(IObject obj)
         {
             return obj != null && obj.Type() == ObjectType.Error;
+        }
+
+        public void DefineMacros(Ast.Program program, Environment env)
+        {
+            var definitions = new System.Collections.Generic.List<int>();
+
+            for (var i = 0; i < program.Statements.Length; i++)
+            {
+                var statement = program.Statements[i];
+                if (IsMacroDefinition(statement))
+                {
+                    AddMacro(statement, env);
+                    definitions.Add(i);
+                }
+            }
+
+            var stmts = new System.Collections.Generic.List<IStatement>(program.Statements);
+            for (var i  = definitions.Count - 1; i >= 0; i--)
+            {
+                stmts.RemoveAt(i);
+            }
+            program.Statements = stmts.ToArray();
+        }
+
+        private void AddMacro(IStatement statement, Environment env)
+        {
+            var letStatement = (LetStatement)statement;
+            var macroLiteral = (MacroLiteral)letStatement.Value;
+
+            var macro = new Obj.Macro { Parameters = macroLiteral.Parameters, Env = env, Body = macroLiteral.Body };
+            env.Set(letStatement.Name.Value, macro);
+        }
+
+        private bool IsMacroDefinition(IStatement statement)
+        {
+            return statement is LetStatement ls && ls.Value is MacroLiteral;
+        }
+
+        public INode ExpandMacros(INode program, Environment env)
+        {
+            return Ast.Modifier.Modify(program, (INode node) =>
+            {
+                var callExpression = node as CallExpression;
+                if (callExpression == null)
+                {
+                    return node;
+                }
+
+                var macro = IsMacroCall(callExpression, env, out bool ok);
+                if (!ok)
+                {
+                    return node;
+                }
+                var args = QuoteArgs(callExpression);
+                var evalEnv = ExtendMacroEnv(macro, args);
+
+                var evaluated = Eval(macro.Body, evalEnv);
+
+                if (evaluated is Obj.Quote q)
+                {
+                    return q.Node;
+                }
+                throw new Exception("we only support returning AST-nodes from macros");
+            });
+        }
+
+        private Robin.Environment ExtendMacroEnv(Macro macro, Quote[] args)
+        {
+            var extended = new Environment(macro.Env);
+
+            for (var i = 0;  i < macro.Parameters.Length; i++)
+            {
+                extended.Set(macro.Parameters[i].Value, args[i]);
+            }
+
+            return extended;
+        }
+
+        private Obj.Quote[] QuoteArgs(CallExpression callExpression)
+        {
+            var args = new System.Collections.Generic.List<Obj.Quote>();
+            foreach (var a in callExpression.Arguments)
+            {
+                args.Add(new Obj.Quote { Node = a });
+            }
+            return args.ToArray();
+        }
+
+        private Obj.Macro IsMacroCall(CallExpression callExpression, Environment env, out bool ok)
+        {
+            var identifier = callExpression.Function as Ast.Identifier;
+            if (identifier == null)
+            {
+                ok = false;
+                return null;
+            }
+
+            if (!env.TryGet(identifier.Value, out IObject obj))
+            {
+                ok = false;
+                return null;
+            }
+
+            var macro = obj as Obj.Macro;
+            if (macro == null)
+            {
+                ok = false;
+                return null;
+            }
+
+            ok = true;
+            return macro;
         }
     }
 }
